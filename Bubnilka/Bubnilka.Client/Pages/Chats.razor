@@ -1,0 +1,313 @@
+@page "/chats"
+@layout MainLayout
+@inject ChatService ChatService
+@inject SignalRService SignalRService
+@inject AuthService AuthService
+@using Bubnilka.Shared.DTOs
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="chats-page">
+    @if (currentChatId == 0)
+    {
+        <div class="chat-list-container">
+            <div class="chat-list-header">
+                <h3>Ваши чаты</h3>
+                <button @onclick="ShowNewChatModal" class="btn btn-new">+ Новый чат</button>
+            </div>
+            
+            @if (chatsLoading)
+            {
+                <p>Загрузка чатов...</p>
+            }
+            else if (chats.Count == 0)
+            {
+                <p class="no-chats">У вас пока нет чатов. Создайте новый!</p>
+            }
+            else
+            {
+                <div class="chat-items">
+                    @foreach (var chat in chats)
+                    {
+                        <div class="chat-item @(selectedChatId == chat.Id ? "active" : "")" 
+                             @onclick="() => SelectChat(chat.Id)">
+                            <div class="chat-avatar">@chat.OtherUserName[0].ToString().ToUpper()</div>
+                            <div class="chat-info">
+                                <div class="chat-name">
+                                    @chat.OtherUserName
+                                    @if (chat.IsOtherUserOnline)
+                                    {
+                                        <span class="online-indicator" title="Онлайн"></span>
+                                    }
+                                </div>
+                                <div class="chat-last-message">
+                                    @if (!string.IsNullOrEmpty(chat.LastMessage))
+                                    {
+                                        @chat.LastMessage
+                                    }
+                                    else
+                                    {
+                                        <em>Нет сообщений</em>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="chat-window">
+            <div class="chat-header">
+                <button @onclick="BackToChatList" class="btn-back">← Назад</button>
+                <div class="chat-header-info">
+                    <span>@currentChatName</span>
+                    @if (isOtherUserOnline)
+                    {
+                        <span class="online-status">онлайн</span>
+                    }
+                    else
+                    {
+                        <span class="offline-status">офлайн</span>
+                    }
+                </div>
+            </div>
+            
+            <div class="messages-container" @ref="messagesContainerRef">
+                @foreach (var message in messages)
+                {
+                    <div class="message @(message.SenderId == currentUserId ? "own" : "other")>
+                        <div class="message-sender">@message.SenderName</div>
+                        <div class="message-content">@message.Content</div>
+                        <div class="message-time">@message.SentAt.LocalDateTime.ToString("HH:mm")</div>
+                    </div>
+                }
+            </div>
+            
+            <div class="message-input">
+                <input type="text" 
+                       @bind="newMessage" 
+                       @bind:event="oninput"
+                       @onkeypress="HandleKeyPress"
+                       placeholder="Напишите сообщение..." 
+                       disabled="@isSending" />
+                <button @onclick="SendMessage" class="btn-send" disabled="@isSending || string.IsNullOrWhiteSpace(newMessage)">
+                    ➤
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@if (showNewChatModal)
+{
+    <div class="modal-overlay" @onclick="CloseNewChatModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <h3>Новый чат</h3>
+            <select @bind="selectedUserId" class="form-control">
+                <option value="0">Выберите пользователя</option>
+                @foreach (var user in availableUsers)
+                {
+                    <option value="@user.Id">@user.DisplayName (@user.Email)</option>
+                }
+            </select>
+            <div class="modal-actions">
+                <button @onclick="CreateNewChat" class="btn btn-primary" disabled="@(selectedUserId == 0)">
+                    Создать
+                </button>
+                <button @onclick="CloseNewChatModal" class="btn btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ChatDto> chats = new();
+    private List<UserInfo> availableUsers = new();
+    private List<MessageDto> messages = new();
+    private bool chatsLoading = true;
+    private int selectedChatId = 0;
+    private int currentChatId = 0;
+    private string currentChatName = "";
+    private string newMessage = "";
+    private bool isSending = false;
+    private int currentUserId = 0;
+    private bool showNewChatModal = false;
+    private int selectedUserId = 0;
+    private bool isOtherUserOnline = false;
+    private ElementReference messagesContainerRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetCurrentUser();
+        if (user != null)
+        {
+            currentUserId = user.Id;
+        }
+        
+        await LoadChats();
+        
+        await SignalRService.Initialize();
+        SignalRService.OnUserStatusChanged += async (userId, isOnline) =>
+        {
+            await UpdateUserStatus(userId, isOnline);
+            StateHasChanged();
+        };
+        SignalRService.OnMessageReceived += async (message) =>
+        {
+            await ReceiveMessage(message);
+            StateHasChanged();
+        };
+    }
+
+    private async Task LoadChats()
+    {
+        chatsLoading = true;
+        chats = await ChatService.GetChats();
+        chatsLoading = false;
+    }
+
+    private async Task SelectChat(int chatId)
+    {
+        currentChatId = chatId;
+        selectedChatId = chatId;
+        
+        var chat = chats.FirstOrDefault(c => c.Id == chatId);
+        if (chat != null)
+        {
+            currentChatName = chat.OtherUserName;
+            isOtherUserOnline = chat.IsOtherUserOnline;
+        }
+        
+        messages = await ChatService.GetMessages(chatId);
+        await SignalRService.JoinChat(chatId);
+        await ChatService.MarkMessagesAsRead(chatId);
+        
+        await ScrollToBottom();
+    }
+
+    private void BackToChatList()
+    {
+        if (currentChatId > 0)
+        {
+            SignalRService.LeaveChat(currentChatId);
+        }
+        currentChatId = 0;
+        selectedChatId = 0;
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(newMessage) || currentChatId == 0) return;
+        
+        isSending = true;
+        await SignalRService.SendMessage(currentChatId, newMessage);
+        newMessage = "";
+        isSending = false;
+        
+        await ScrollToBottom();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task ReceiveMessage(dynamic message)
+    {
+        if (message.ChatId == currentChatId)
+        {
+            messages.Add(new MessageDto
+            {
+                Id = message.Id,
+                ChatId = message.ChatId,
+                SenderId = message.SenderId,
+                Content = message.Content,
+                SentAt = DateTime.Parse(message.SentAt.ToString()),
+                SenderName = message.SenderName
+            });
+            
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await Task.Delay(100);
+        // Simple scroll - in production use JSInterop
+    }
+
+    private void ShowNewChatModal()
+    {
+        showNewChatModal = true;
+        _ = LoadAvailableUsers();
+    }
+
+    private void CloseNewChatModal()
+    {
+        showNewChatModal = false;
+        selectedUserId = 0;
+    }
+
+    private async Task LoadAvailableUsers()
+    {
+        availableUsers = await ChatService.GetAvailableUsers();
+    }
+
+    private async Task CreateNewChat()
+    {
+        if (selectedUserId == 0) return;
+        
+        var chat = await ChatService.CreateChat(selectedUserId);
+        if (chat != null)
+        {
+            CloseNewChatModal();
+            await LoadChats();
+            await SelectChat(chat.Id);
+        }
+    }
+
+    private async Task UpdateUserStatus(int userId, bool isOnline)
+    {
+        var chat = chats.FirstOrDefault(c => c.OtherUserId == userId);
+        if (chat != null)
+        {
+            chat.IsOtherUserOnline = isOnline;
+            if (currentChatId == chat.Id)
+            {
+                isOtherUserOnline = isOnline;
+            }
+        }
+    }
+
+    public class ChatDto
+    {
+        public int Id { get; set; }
+        public int OtherUserId { get; set; }
+        public string OtherUserName { get; set; } = "";
+        public string LastMessage { get; set; } = "";
+        public DateTime? LastMessageAt { get; set; }
+        public bool IsOtherUserOnline { get; set; }
+    }
+
+    public class MessageDto
+    {
+        public int Id { get; set; }
+        public int ChatId { get; set; }
+        public int SenderId { get; set; }
+        public string Content { get; set; } = "";
+        public DateTime SentAt { get; set; }
+        public string SenderName { get; set; } = "";
+    }
+
+    public class UserInfo
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+    }
+}

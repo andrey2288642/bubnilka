@@ -1,0 +1,43 @@
+```
+# Build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+dist/
+build/
+
+# Dependencies
+node_modules/
+packages/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+TestResults/
+
+# User-specific files
+.vs/
+*.user
+*.userosscache
+*.suo
+```
