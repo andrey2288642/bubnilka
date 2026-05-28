@@ -1,0 +1,44 @@
+@inherits LayoutComponentBase
+
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>🗨️ Бубнилка</h2>
+        </div>
+        <nav class="chat-list">
+            <a href="/chats" class="nav-item @(NavMenuActiveClass == "chats" ? "active" : "")">
+                💬 Чаты
+            </a>
+        </nav>
+        <div class="user-info">
+            <span>@currentUserDisplayName</span>
+            <button @onclick="Logout" class="logout-btn">Выйти</button>
+        </div>
+    </aside>
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private AuthService AuthService { get; set; } = default!;
+    
+    private string currentUserDisplayName = "";
+    protected string NavMenuActiveClass = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetCurrentUser();
+        if (user != null)
+        {
+            currentUserDisplayName = user.DisplayName;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.Logout();
+        Navigation.NavigateTo("/login");
+    }
+}
