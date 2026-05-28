@@ -5,41 +5,39 @@ obj/
 *.dll
 *.exe
 *.pdb
-*.config
-*.manifest
-*.lock
-*.cache
+*.nupkg
+*.snupkg
+dist/
+build/
 
 # Dependencies
-packages/
 node_modules/
-bower_components/
+packages/
 
 # Logs
 *.log
 
-# Environment specific
+# Environment
 .env
 .env.local
-*.userprefs
-*.userosscache
-*.suo
-*.user
-.vs/
+*.env.*
+
+# Editors
 .vscode/
+.idea/
+*.swp
+*.swo
 
 # OS generated files
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Icon?
-desktop.ini
 
 # Testing
 TestResults/
 
-# IDE
-*.swp
-*.swo
-*~
+# User-specific files
+.vs/
+*.user
+*.userosscache
+*.suo
 ```

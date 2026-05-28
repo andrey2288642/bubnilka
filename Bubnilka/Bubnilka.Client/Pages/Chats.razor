@@ -3,6 +3,8 @@
 @inject ChatService ChatService
 @inject SignalRService SignalRService
 @inject AuthService AuthService
+@using Bubnilka.Shared.DTOs
+@using Microsoft.AspNetCore.Components.Web
 
 <div class="chats-page">
     @if (currentChatId == 0)
@@ -75,7 +77,7 @@
             <div class="messages-container" @ref="messagesContainerRef">
                 @foreach (var message in messages)
                 {
-                    <div class="message @(message.SenderId == currentUserId ? "own" : "other')">
+                    <div class="message @(message.SenderId == currentUserId ? "own" : "other")>
                         <div class="message-sender">@message.SenderName</div>
                         <div class="message-content">@message.Content</div>
                         <div class="message-time">@message.SentAt.LocalDateTime.ToString("HH:mm")</div>

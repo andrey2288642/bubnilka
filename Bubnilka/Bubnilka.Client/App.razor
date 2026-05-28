@@ -2,16 +2,9 @@
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
             <NotAuthorized>
-                @if (context is not null)
-                {
-                    <RedirectToLogin />
-                }
-                else
-                {
-                    <LayoutView Layout="@typeof(LoginLayout)">
-                        <p>Загрузка...</p>
-                    </LayoutView>
-                }
+                <LayoutView Layout="@typeof(LoginLayout)">
+                    <p>Требуется вход</p>
+                </LayoutView>
             </NotAuthorized>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
@@ -22,7 +15,3 @@
         </LayoutView>
     </NotFound>
 </Router>
-
-@code {
-    private RedirectToLogin Redirect { get; set; } = default!;
-}
