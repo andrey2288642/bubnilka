@@ -8,6 +8,7 @@ public class User
     public string DisplayName { get; set; } = string.Empty;
     public bool IsOnline { get; set; }
     public DateTime LastSeen { get; set; }
-    public List<Chat> Chats { get; set; } = new();
+    public List<Chat> ChatsAsUser1 { get; set; } = new();
+    public List<Chat> ChatsAsUser2 { get; set; } = new();
     public List<Message> SentMessages { get; set; } = new();
 }

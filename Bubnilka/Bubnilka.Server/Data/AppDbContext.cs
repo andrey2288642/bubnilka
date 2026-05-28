@@ -30,12 +30,12 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => new { e.UserId1, e.UserId2 }).IsUnique();
             
             entity.HasOne(e => e.User1)
-                  .WithMany(u => u.Chats)
+                  .WithMany(u => u.ChatsAsUser1)
                   .HasForeignKey(e => e.UserId1)
                   .OnDelete(DeleteBehavior.Restrict);
             
             entity.HasOne(e => e.User2)
-                  .WithMany(u => u.Chats)
+                  .WithMany(u => u.ChatsAsUser2)
                   .HasForeignKey(e => e.UserId2)
                   .OnDelete(DeleteBehavior.Restrict);
         });

@@ -1,64 +1,45 @@
 ```
-# Build results
-[Bb]in/
-[Oo]bj/
+# Build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.config
+*.manifest
+*.lock
+*.cache
 
-# User-specific (Mono/MonoDevelop)
-*.userprefs
-
-# User-specific (Visual Studio)
-**/UserSettings/
-
-# NuGet Packages
-*.nupkg
-*.snupkg
-
-# The packages folder can be ignored in most cases
+# Dependencies
 packages/
+node_modules/
+bower_components/
 
-# Output of 'dotnet publish'
-**/bin/Release/**
-**/bin/Debug/**
+# Logs
+*.log
 
-# Configuration file for dev secrets
-appsettings.Development.json
-appsettings.Production.json
-
-# Environment specific files
+# Environment specific
 .env
 .env.local
-*.env.*
+*.userprefs
+*.userosscache
+*.suo
+*.user
+.vs/
+.vscode/
 
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
+Icon?
 desktop.ini
 
-# Visual Studio Code
-.vscode/
-
-# Temporary files
-*.tmp
-*.temp
-*.log
-
-# Dependencies
-node_modules/
-.npm/
-.yarn/
+# Testing
+TestResults/
 
 # IDE
-.idea/
 *.swp
 *.swo
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
+*~
 ```
